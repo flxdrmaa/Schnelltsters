@@ -467,58 +467,122 @@ We’re not just here to compete. We’re here to win.ts.</p>
         <p style="margin-top: 50px; color: #444; font-size: 10px; letter-spacing: 2px;">SNR RACING © 2024</p>
     </footer>
 
-    <script>
-        // Custom Cursor Movement
-        const cursor = document.getElementById('cursor');
-        const follower = document.getElementById('cursor-follower');
-        document.addEventListener('mousemove', (e) => {
-            cursor.style.left = e.clientX + 'px';
-            cursor.style.top = e.clientY + 'px';
-            setTimeout(() => {
-                follower.style.left = (e.clientX - 15) + 'px';
-                follower.style.top = (e.clientY - 15) + 'px';
-            }, 60);
-        });
+    <!-- Load Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-        const activeElements = document.querySelectorAll('a, .driver-card, .car-card, .media-item');
-        activeElements.forEach(el => {
-            el.addEventListener('mouseenter', () => {
-                follower.style.transform = 'scale(1.8)';
-                follower.style.backgroundColor = 'rgba(0, 204, 255, 0.1)';
-            });
-            el.addEventListener('mouseleave', () => {
-                follower.style.transform = 'scale(1)';
-                follower.style.backgroundColor = 'transparent';
-            });
-        });
+<script>
+    // 1. CONFIG SUPABASE (Ganti dengan API Key milikmu)
+    const SUPABASE_URL = 'https://URL_PROJECT_ANDA.supabase.co';
+    const SUPABASE_KEY = 'YOUR_ANON_PUBLIC_KEY';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // NEWS SLIDER LOGIC
+    // --- FUNGSI AMBIL DATA NEWS ---
+    async function fetchNews() {
+        const { data: news, error } = await supabase
+            .from('news')
+            .select('*')
+            .order('id', { ascending: false });
+
+        if (error) return console.error(error);
+
+        const wrapper = document.getElementById('news-wrapper');
+        const dotsContainer = document.getElementById('dots');
+        wrapper.innerHTML = '';
+        dotsContainer.innerHTML = '';
+
+        news.forEach((item, index) => {
+            // Render Card
+            wrapper.innerHTML += `
+                <div class="news-card">
+                    <img src="${item.image_url}" alt="${item.title}">
+                    <div class="news-content-box">
+                        <span class="news-date">${item.date_label}</span>
+                        <h3 class="news-title">${item.title}</h3>
+                        <a href="${item.link}" class="readme-btn">Read More</a>
+                    </div>
+                </div>
+            `;
+            // Render Dots
+            dotsContainer.innerHTML += `<div class="dot ${index === 0 ? 'active' : ''}"></div>`;
+        });
+        
+        startSlider(); // Jalankan slider setelah data muncul
+    }
+
+    // --- FUNGSI AMBIL DATA TICKER ---
+    async function fetchTicker() {
+        const { data: stats, error } = await supabase.from('ticker_stats').select('content');
+        if (error) return;
+
+        const tickerWrap = document.querySelector('.ticker-wrap');
+        // Gabungkan semua stat menjadi string panjang
+        const contentString = stats.map(s => `<div class="ticker-item">${s.content}</div>`).join('');
+        // Gandakan konten agar loop halus (seamless)
+        tickerWrap.innerHTML = contentString + contentString;
+    }
+
+    // --- FUNGSI AMBIL DATA DRIVER ---
+    async function fetchDrivers() {
+        const { data: drivers, error } = await supabase.from('drivers').select('*').order('id', { ascending: true });
+        if (error) return;
+
+        const container = document.querySelector('.card-hand-container');
+        container.innerHTML = '';
+
+        drivers.forEach((d, index) => {
+            container.innerHTML += `
+                <div class="driver-card card-${index + 1}">
+                    <div class="card-header">
+                        <h4 style="font-size: 9px; letter-spacing: 2px; color: var(--cyan);">SNR PASS</h4>
+                        <span style="font-weight: 900; font-size: 24px; opacity: 0.2;">#${d.number}</span>
+                    </div>
+                    <img src="${d.image_url}" class="driver-portrait">
+                    <div class="card-footer">
+                        <p>${d.role}</p>
+                        <h3 style="font-size: 24px; font-weight: 900;">${d.name}</h3>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    // --- LOGIC SLIDER (Dijalankan setelah fetch) ---
+    function startSlider() {
         const wrapper = document.getElementById('news-wrapper');
         const dots = document.querySelectorAll('.dot');
         let currentSlide = 0;
 
         function updateSlider() {
             wrapper.style.transform = `translateX(-${currentSlide * 100}%)`;
-            dots.forEach((dot, index) => {
-                dot.classList.toggle('active', index === currentSlide);
-            });
+            dots.forEach((dot, index) => dot.classList.toggle('active', index === currentSlide));
         }
 
-        function nextSlide() {
-            currentSlide = (currentSlide + 1) % dots.length;
-            updateSlider();
-        }
-
-        // Auto slide every 5 seconds
-        setInterval(nextSlide, 5000);
-
-        // Optional: Manual click dots
-        dots.forEach((dot, index) => {
-            dot.addEventListener('click', () => {
-                currentSlide = index;
+        setInterval(() => {
+            if(dots.length > 0) {
+                currentSlide = (currentSlide + 1) % dots.length;
                 updateSlider();
-            });
-        });
-    </script>
+            }
+        }, 5000);
+    }
+
+    // --- CURSOR LOGIC ---
+    const cursor = document.getElementById('cursor');
+    const follower = document.getElementById('cursor-follower');
+    document.addEventListener('mousemove', (e) => {
+        cursor.style.left = e.clientX + 'px';
+        cursor.style.top = e.clientY + 'px';
+        setTimeout(() => {
+            follower.style.left = (e.clientX - 15) + 'px';
+            follower.style.top = (e.clientY - 15) + 'px';
+        }, 60);
+    });
+
+    // Jalankan semua fungsi saat halaman load
+    window.onload = () => {
+        fetchNews();
+        fetchTicker();
+        fetchDrivers();
+    };
+</script>
 </body>
 </html>
