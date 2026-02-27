@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Schnellsters Oracle Team</title>
+    <title>SNR RACING | Professional Circuit Division</title>
     
-    <!-- Fonts -->
+    <!-- Fonts & Supabase SDK -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Syncopate:wght@700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
         :root {
@@ -18,274 +19,103 @@
             --gray: #888888;
         }
 
-        /* --- GLOBAL SETUP --- */
-        * {
-            margin: 0; padding: 0;
-            box-sizing: border-box;
-            cursor: none; 
+        /* --- RESET & CURSOR FIX --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; cursor: none !important; }
+        body { background-color: var(--dark); color: var(--white); font-family: 'Inter', sans-serif; overflow-x: hidden; line-height: 1.6; }
+
+        #cursor {
+            position: fixed;
+            width: 8px;
+            height: 8px;
+            background: var(--cyan);
+            border-radius: 50%;
+            z-index: 10000; /* Z-index maksimal */
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            transition: width 0.2s, height 0.2s;
         }
 
-        html { scroll-behavior: smooth; }
-
-        body {
-            background-color: var(--dark);
-            color: var(--white);
-            font-family: 'Inter', sans-serif;
-            overflow-x: hidden;
-            line-height: 1.6;
-            -webkit-font-smoothing: antialiased;
+        #cursor-follower {
+            position: fixed;
+            width: 30px;
+            height: 30px;
+            border: 1px solid var(--cyan);
+            border-radius: 50%;
+            z-index: 9999;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            transition: transform 0.1s ease-out, width 0.3s, height 0.3s, background 0.3s;
         }
 
-        /* --- CUSTOM CURSOR --- */
-        #cursor, #cursor-follower { position: fixed; z-index: 1000; pointer-events: none; }
-        #cursor { width: 8px; height: 8px; background: var(--cyan); border-radius: 50%; }
-        #cursor-follower { width: 35px; height: 35px; border: 1px solid var(--cyan); border-radius: 50%; transition: 0.1s ease-out; }
-
-        @media (pointer: coarse) { #cursor, #cursor-follower { display: none; } * { cursor: auto; } }
+        @media (pointer: coarse) { #cursor, #cursor-follower { display: none; } * { cursor: auto !important; } }
 
         /* --- NAVIGATION --- */
-        nav {
-            position: fixed; top: 0; width: 100%;
-            padding: 20px 5%; display: flex; justify-content: space-between; align-items: center;
-            z-index: 100; background: linear-gradient(to bottom, var(--dark) 20%, transparent);
-            backdrop-filter: blur(10px);
-        }
+        nav { position: fixed; top: 0; width: 100%; padding: 20px 5%; display: flex; justify-content: space-between; align-items: center; z-index: 100; background: linear-gradient(to bottom, var(--dark) 20%, transparent); backdrop-filter: blur(10px); }
         .logo-box img { height: 35px; filter: drop-shadow(0 0 8px var(--cyan)); }
-        .nav-links a {
-            text-decoration: none; color: var(--white);
-            font-weight: 700; font-size: 10px; letter-spacing: 2px;
-            text-transform: uppercase; margin-left: 25px; transition: 0.3s; opacity: 0.7;
-        }
+        .nav-links a { text-decoration: none; color: var(--white); font-weight: 700; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; margin-left: 25px; opacity: 0.7; transition: 0.3s; }
         .nav-links a:hover { opacity: 1; color: var(--cyan); }
 
-        /* --- HERO SECTION --- */
-        .hero {
-            min-height: 100vh; display: flex; align-items: center;
-            padding: 100px 5%; position: relative; overflow: hidden;
-        }
-
-        .hero-bg-shadow-text {
-            position: absolute;
-            font-family: 'Syncopate', sans-serif;
-            font-size: 20vw;
-            font-weight: 900;
-            color: transparent;
-            -webkit-text-stroke: 1px rgba(255, 255, 255, 0.04);
-            z-index: 1;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            white-space: nowrap;
-            user-select: none;
-            pointer-events: none;
-        }
-
-        .hero-content { position: relative; z-index: 10; width: 100%; }
-        .hero-content h1 {
-            font-size: clamp(40px, 8vw, 90px); font-weight: 900;
-            line-height: 0.85; text-transform: uppercase; margin-bottom: 20px;
-        }
+        /* --- HERO --- */
+        .hero { min-height: 100vh; display: flex; align-items: center; padding: 100px 5%; position: relative; overflow: hidden; }
+        .hero-bg-shadow-text { position: absolute; font-family: 'Syncopate', sans-serif; font-size: 20vw; font-weight: 900; color: transparent; -webkit-text-stroke: 1px rgba(255, 255, 255, 0.04); z-index: 1; top: 50%; left: 50%; transform: translate(-50%, -50%); white-space: nowrap; user-select: none; pointer-events: none; }
+        .hero-content { position: relative; z-index: 10; }
+        .hero-content h1 { font-size: clamp(40px, 8vw, 90px); font-weight: 900; line-height: 0.85; text-transform: uppercase; }
         .hero-content h1 span { color: transparent; -webkit-text-stroke: 1px var(--white); }
+        .hero-image-main { position: absolute; right: -10%; width: 65%; z-index: 5; opacity: 0.6; mask-image: linear-gradient(to left, black 70%, transparent 100%); pointer-events: none; }
 
-        .hero-image-main {
-            position: absolute; right: -10%; width: 65%;
-            z-index: 5; opacity: 0.6; pointer-events: none;
-            mask-image: linear-gradient(to left, black 70%, transparent 100%);
-        }
+        /* --- TICKER --- */
+        .ticker-container { background: var(--cyan); color: var(--dark); padding: 15px 0; overflow: hidden; position: relative; z-index: 20; margin-top: -20px; }
+        .ticker-wrap { display: flex; width: fit-content; animation: ticker-move 30s linear infinite; }
+        .ticker-item { flex-shrink: 0; padding: 0 40px; font-weight: 900; text-transform: uppercase; font-size: 13px; letter-spacing: 2px; }
+        @keyframes ticker-move { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 
-        /* --- TICKER STATS (FIXED SEAMLESS LOOP) --- */
-        .ticker-container {
-            background: var(--cyan);
-            color: var(--dark);
-            padding: 15px 0;
-            overflow: hidden;
-            position: relative;
-            z-index: 20;
-            display: flex;
-            border: none;
-        }
-
-        .ticker-wrap {
-            display: flex;
-            width: fit-content;
-            animation: ticker-move 30s linear infinite;
-        }
-
-        .ticker-item {
-            flex-shrink: 0;
-            padding: 0 40px;
-            font-weight: 900;
-            text-transform: uppercase;
-            font-size: 13px;
-            letter-spacing: 2px;
-            display: flex;
-            align-items: center;
-        }
-
-        @keyframes ticker-move {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-        }
-
-        /* --- NEWS SECTION (NEW UI) --- */
-        .news-section {
-            padding: 100px 5%;
-            position: relative;
-            background: var(--dark);
-        }
-
-        .news-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            margin-bottom: 40px;
-        }
-
-        .news-header p { color: var(--cyan); font-weight: 800; letter-spacing: 5px; font-size: 10px; text-transform: uppercase; }
-        .news-header h2 { font-size: clamp(30px, 5vw, 50px); font-weight: 900; text-transform: uppercase; }
-
-        .news-slider-container {
-            width: 100%;
-            overflow: hidden;
-            position: relative;
-            border-radius: 20px;
-        }
-
-        .news-wrapper {
-            display: flex;
-            transition: transform 0.8s cubic-bezier(0.77, 0, 0.175, 1);
-        }
-
-        .news-card {
-            min-width: 100%;
-            height: 500px;
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            align-items: flex-end;
-        }
-
-        .news-card img {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            object-fit: cover;
-            transition: transform 1s ease;
-        }
-
+        /* --- NEWS SLIDER --- */
+        .news-section { padding: 100px 5%; }
+        .news-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px; }
+        .news-slider-container { width: 100%; overflow: hidden; border-radius: 20px; position: relative; background: #080f1a; }
+        .news-wrapper { display: flex; transition: transform 0.8s cubic-bezier(0.77, 0, 0.175, 1); }
+        .news-card { min-width: 100%; height: 500px; position: relative; display: flex; align-items: flex-end; overflow: hidden; }
+        .news-card img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; transition: 0.5s; }
         .news-card:hover img { transform: scale(1.05); }
+        .news-content-box { position: relative; z-index: 5; padding: 50px; width: 100%; background: linear-gradient(to top, var(--dark) 40%, transparent); }
+        .dot { width: 40px; height: 3px; background: rgba(255,255,255,0.1); transition: 0.3s; }
+        .dot.active { background: var(--cyan); }
+        .slider-dots { display: flex; gap: 10px; }
 
-        .news-content-box {
-            position: relative;
-            z-index: 5;
-            padding: 50px;
-            width: 100%;
-            background: linear-gradient(to top, rgba(1, 6, 15, 0.9), transparent);
-        }
-
-        .news-date {
-            font-size: 10px;
-            font-weight: 900;
-            color: var(--cyan);
-            margin-bottom: 10px;
-            display: block;
-        }
-
-        .news-title {
-            font-size: clamp(20px, 4vw, 35px);
-            font-weight: 900;
-            text-transform: uppercase;
-            max-width: 700px;
-            margin-bottom: 20px;
-            line-height: 1.1;
-        }
-
-        .readme-btn {
-            display: inline-block;
-            padding: 10px 25px;
-            border: 1px solid var(--cyan);
-            color: var(--cyan);
-            text-decoration: none;
-            font-weight: 900;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            transition: 0.3s;
-        }
-
-        .readme-btn:hover {
-            background: var(--cyan);
-            color: var(--dark);
-        }
-
-        .slider-dots {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .dot {
-            width: 40px;
-            height: 3px;
-            background: rgba(255,255,255,0.1);
-            transition: 0.3s;
-        }
-
-        .dot.active {
-            background: var(--cyan);
-        }
-
-        /* --- DRIVER SECTION --- */
+        /* --- DRIVERS --- */
         .drivers-section { padding: 100px 5%; background: radial-gradient(circle at center, #0a1d37, var(--dark)); text-align: center; }
-        .card-hand-container { display: flex; justify-content: center; align-items: center; min-height: 600px; perspective: 2000px; margin-top: 40px; gap: 20px; }
-        .driver-card {
-            position: relative; width: 100%; max-width: 350px; height: 500px;
-            background: #041124; border: 1px solid rgba(0, 204, 255, 0.1);
-            border-radius: 15px; padding: 25px; transition: 0.6s ease; overflow: hidden; text-align: left;
-        }
-        .card-1 { transform: rotateY(15deg) rotateZ(-3deg) translateX(30px); }
-        .card-2 { transform: rotateY(-15deg) rotateZ(3deg) translateX(-30px); }
-        .driver-card:hover { transform: rotateY(0) scale(1.05) translateY(-10px) !important; z-index: 100; border-color: var(--cyan); }
-        .driver-portrait { width: 140%; height: 320px; object-fit: contain; filter: grayscale(100%); transition: 0.5s; position: relative; left: 50%; transform: translateX(-50%); }
-        .driver-card:hover .driver-portrait { filter: grayscale(0%); }
+        .card-hand-container { display: flex; justify-content: center; flex-wrap: wrap; gap: 30px; margin-top: 50px; }
+        .driver-card { background: #041124; border: 1px solid rgba(0,204,255,0.1); border-radius: 15px; padding: 25px; width: 300px; text-align: left; transition: 0.4s; position: relative; }
+        .driver-card:hover { border-color: var(--cyan); transform: translateY(-10px); z-index: 10; }
+        .driver-portrait { width: 100%; height: 280px; object-fit: contain; filter: grayscale(1); transition: 0.5s; }
+        .driver-card:hover .driver-portrait { filter: grayscale(0); }
 
-        /* --- WORKSHOP SECTION --- */
-        .garage-section { padding: 100px 5%; background: var(--dark); }
-        .garage-grid { display: grid; grid-template-cols: repeat(auto-fit, minmax(320px, 1fr)); gap: 30px; }
-        .car-card { background: #080f1a; padding: 40px; border-left: 4px solid var(--cyan); transition: 0.4s; }
+        /* --- GARAGE --- */
+        .garage-section { padding: 100px 5%; }
+        .garage-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
+        .car-card { background: #080f1a; padding: 30px; border-left: 4px solid var(--cyan); transition: 0.3s; }
         .car-card:hover { background: #0c1625; transform: translateX(10px); }
-        .car-card h4 { font-size: 24px; font-weight: 900; text-transform: uppercase; color: var(--cyan); margin-bottom: 10px; }
+        .spec-item { display: flex; justify-content: space-between; margin-top: 10px; font-size: 11px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px; }
 
-        /* --- SHOWCASE SECTION --- */
-        .media-section { padding: 100px 5%; background: var(--white); color: var(--dark); }
-        .bento-grid { display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 250px; gap: 15px; margin-top: 40px; }
-        .media-item { position: relative; background: #000; border-radius: 8px; overflow: hidden; transition: 0.5s; }
-        .media-featured { grid-column: span 2; grid-row: span 2; }
-        .media-portrait { grid-row: span 2; }
-        .media-item img { width: 100%; height: 100%; object-fit: cover; transition: 0.6s; opacity: 0.8; }
-        .media-item:hover img { transform: scale(1.05); opacity: 0.4; }
-
-        footer { padding: 100px 5%; text-align: center; border-top: 1px solid rgba(255,255,255,0.05); }
-        .discord-btn { padding: 20px 50px; background: var(--cyan); color: var(--dark); text-decoration: none; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; border-radius: 4px; display: inline-block; }
+        footer { padding: 80px 5%; text-align: center; border-top: 1px solid rgba(255,255,255,0.05); }
+        .discord-btn { padding: 15px 40px; background: var(--cyan); color: var(--dark); text-decoration: none; font-weight: 900; border-radius: 4px; display: inline-block; transition: 0.3s; }
+        .discord-btn:hover { box-shadow: 0 0 20px var(--cyan); }
 
         @media (max-width: 900px) {
             .nav-links { display: none; }
-            .hero-bg-shadow-text { font-size: 30vw; }
-            .card-hand-container { flex-direction: column; height: auto; gap: 40px; padding: 50px 0; }
-            .card-1, .card-2 { transform: none !important; }
-            .bento-grid { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 200px; }
             .news-card { height: 400px; }
-            .news-content-box { padding: 30px; }
+            .news-content-box { padding: 20px; }
         }
     </style>
 </head>
 <body>
 
+    <!-- CURSOR ELEMENTS -->
     <div id="cursor"></div>
     <div id="cursor-follower"></div>
 
     <nav>
-        <div class="logo-box"><img src="input_file_0.png"></div>
+        <div class="logo-box"><img src="input_file_0.png" alt="Logo"></div>
         <div class="nav-links">
             <a href="#home">Home</a>
             <a href="#news">Updates</a>
@@ -294,295 +124,185 @@
         </div>
     </nav>
 
-    <!-- HERO SECTION -->
     <section class="hero" id="home">
         <div class="hero-bg-shadow-text">SCHNELLSTER</div>
         <div class="hero-content">
-            <p style="color: var(--cyan); font-weight: 700; letter-spacing: 5px; font-size: 10px; margin-bottom: 10px;">// PROFESSIONAL DIVISION</p>
-            <h1>Schnellsters<br><span>Oracle Team</span></h1>
-            <p style="color: var(--gray); font-size: 16px; max-width: 450px; margin-bottom: 30px;">At Schnellster Oracle Team, we believe that speed is more than just a number on the speedometer — it’s the result of hard work, teamwork, and an unbreakable will to win.
-We’re not just here to compete. We’re here to win.ts.</p>
-            <a href="#drivers" style="color: var(--cyan); text-decoration: none; font-weight: 900; letter-spacing: 2px; border: 1px solid var(--cyan); padding: 12px 25px; text-transform: uppercase; font-size: 12px;">Discover Paddock</a>
+            <p style="color: var(--cyan); font-weight: 700; letter-spacing: 5px; font-size: 10px;">// PROFESSIONAL DIVISION</p>
+            <h1>SNR RACING<br><span>DIVISION.</span></h1>
+            <p style="color: var(--gray); font-size: 14px; max-width: 400px; margin: 20px 0;">The most elite circuit racing team in San Andreas. Powered by precision, driven by speed.</p>
+            <a href="#drivers" style="display:inline-block; color: var(--cyan); text-decoration: none; border: 1px solid var(--cyan); padding: 12px 25px; font-size: 11px; font-weight: 900; letter-spacing: 2px;">DISCOVER PADDOCK</a>
         </div>
         <img src="https://gta-objects.com/images/vehicles/infernus.png" class="hero-image-main">
     </section>
 
-    <!-- TICKER STATS (SEAMLESS) -->
+    <!-- TICKER -->
     <div class="ticker-container">
-        <div class="ticker-wrap">
-            <div class="ticker-item">● LOS SANTOS GP: P1</div>
-            <div class="ticker-item">● TEAM RANK: #1</div>
-            <div class="ticker-item">● NEW LAP RECORD: 1:12.402</div>
-            <div class="ticker-item">● TOTAL PODIUMS: 58</div>
-            <div class="ticker-item">● CHAMPIONSHIP POINTS: 420</div>
-            <div class="ticker-item">● LOS SANTOS GP: P1</div>
-            <div class="ticker-item">● TEAM RANK: #1</div>
-            <div class="ticker-item">● NEW LAP RECORD: 1:12.402</div>
-            <div class="ticker-item">● TOTAL PODIUMS: 58</div>
-            <div class="ticker-item">● CHAMPIONSHIP POINTS: 420</div>
+        <div class="ticker-wrap" id="ticker-target">
+            <div class="ticker-item">● LOADING TEAM STATS...</div>
         </div>
     </div>
 
-    <!-- NEWS SECTION (NEW UI) -->
+    <!-- NEWS -->
     <section class="news-section" id="news">
         <div class="news-header">
             <div>
-                <p>// THE LATEST UPDATES</p>
-                <h2>SNR Newsroom</h2>
+                <p style="color:var(--cyan); font-size:10px; font-weight:900; letter-spacing: 3px;">// THE LATEST</p>
+                <h2 style="font-size: clamp(30px, 5vw, 50px); text-transform:uppercase; font-weight: 900;">Newsroom</h2>
             </div>
-            <div class="slider-dots" id="dots">
-                <div class="dot active"></div>
-                <div class="dot"></div>
-                <div class="dot"></div>
-            </div>
+            <div class="slider-dots" id="dots-target"></div>
         </div>
-
         <div class="news-slider-container">
-            <div class="news-wrapper" id="news-wrapper">
-                <!-- News 1 -->
-                <div class="news-card">
-                    <img src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=2000" alt="News 1">
-                    <div class="news-content-box">
-                        <span class="news-date">FEBRUARY 27, 2024</span>
-                        <h3 class="news-title">Victory at Los Santos GP: SNR Dominates the Podium</h3>
-                        <a href="#" class="readme-btn">Read More</a>
-                    </div>
-                </div>
-                <!-- News 2 -->
-                <div class="news-card">
-                    <img src="https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?auto=format&fit=crop&q=80&w=2000" alt="News 2">
-                    <div class="news-content-box">
-                        <span class="news-date">FEBRUARY 24, 2024</span>
-                        <h3 class="news-title">Unveiling the 'Cyan Ghost' Livery for the 2024 Season</h3>
-                        <a href="#" class="readme-btn">Read More</a>
-                    </div>
-                </div>
-                <!-- News 3 -->
-                <div class="news-card">
-                    <img src="https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&q=80&w=2000" alt="News 3">
-                    <div class="news-content-box">
-                        <span class="news-date">FEBRUARY 20, 2024</span>
-                        <h3 class="news-title">Technical Update: New Suspension System for Infernus GTR</h3>
-                        <a href="#" class="readme-btn">Read More</a>
-                    </div>
-                </div>
+            <div class="news-wrapper" id="news-target">
+                <!-- Data from Supabase -->
             </div>
         </div>
     </section>
 
-    <!-- DRIVERS SECTION -->
+    <!-- DRIVERS -->
     <section class="drivers-section" id="drivers">
-        <span style="color: var(--cyan); font-weight: 900; letter-spacing: 5px; font-size: 10px; margin-bottom: 20px; display: block;">// THE PILOTS</span>
-        <h2 style="font-size: clamp(30px, 5vw, 50px); font-weight: 900; text-transform: uppercase;">Meet The Lineup</h2>
-        <div class="card-hand-container">
-            <div class="driver-card card-1">
-                <div class="card-header">
-                    <h4 style="font-size: 9px; letter-spacing: 2px; color: var(--cyan);">SNR PASS</h4>
-                    <span style="font-weight: 900; font-size: 24px; opacity: 0.2;">#07</span>
-                </div>
-                <img src="https://www.formula1.com/content/dam/fom-website/drivers/M/MAXVER01_Max_Verstappen/maxver01.png" class="driver-portrait">
-                <div class="card-footer">
-                    <p>LEAD PILOT</p>
-                    <h3 style="font-size: 24px; font-weight: 900;">RICO SANTANA</h3>
-                </div>
-            </div>
-            <div class="driver-card card-2">
-                <div class="card-header">
-                    <h4 style="font-size: 9px; letter-spacing: 2px; color: var(--cyan);">SNR PASS</h4>
-                    <span style="font-weight: 900; font-size: 24px; opacity: 0.2;">#19</span>
-                </div>
-                <img src="https://www.formula1.com/content/dam/fom-website/drivers/L/LANSTR01_Lance_Stroll/lanstr01.png" class="driver-portrait">
-                <div class="card-footer">
-                    <p>TECHNICAL PILOT</p>
-                    <h3 style="font-size: 24px; font-weight: 900;">ALEX VOLKOV</h3>
-                </div>
-            </div>
+        <p style="color:var(--cyan); font-size:10px; font-weight:900; letter-spacing: 3px;">// THE PILOTS</p>
+        <h2 style="font-size: clamp(30px, 5vw, 50px); text-transform:uppercase; font-weight: 900;">Meet The Lineup</h2>
+        <div class="card-hand-container" id="drivers-target">
+            <!-- Data from Supabase -->
         </div>
     </section>
 
-    <!-- WORKSHOP SECTION -->
+    <!-- GARAGE -->
     <section class="garage-section" id="garage">
-        <div class="section-header">
-            <p>// THE MACHINES</p>
-            <h2>SNR Workshop</h2>
-        </div>
-        <div class="garage-grid">
-            <div class="car-card">
-                <h4>Sultan RS Custom</h4>
-                <p>Modified for high-speed corners. The drift king of San Fierro.</p>
-                <div class="spec-list">
-                    <div class="spec-item"><span>Top Speed</span><b>215 KMH</b></div>
-                    <div class="spec-item"><span>Engine</span><b>V6 TURBO</b></div>
-                </div>
-            </div>
-            <div class="car-card">
-                <h4>Infernus GTR</h4>
-                <p>Built for Los Santos circuit. Pure aerodynamic speed.</p>
-                <div class="spec-list">
-                    <div class="spec-item"><span>Top Speed</span><b>240 KMH</b></div>
-                    <div class="spec-item"><span>Engine</span><b>V12 NA</b></div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- SHOWCASE (BENTO) -->
-    <section class="media-section" id="media">
-        <h2 style="font-size: clamp(30px, 5vw, 50px); font-weight: 900; text-transform: uppercase; color: var(--navy);">Team Media</h2>
-        <div class="bento-grid">
-            <div class="media-item media-featured">
-                <img src="https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?q=80&w=2070">
-                <div class="media-overlay">
-                    <span class="media-label">HIGHLIGHT</span>
-                    <h3 style="font-weight:900">S1 CHAMPIONSHIP</h3>
-                </div>
-            </div>
-            <div class="media-item media-portrait">
-                <img src="https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?q=80&w=2070">
-                <div class="media-overlay">
-                    <span class="media-label">LIVERY</span>
-                    <h3 style="font-weight:900">CYAN GHOST</h3>
-                </div>
-            </div>
-            <div class="media-item">
-                <img src="https://images.unsplash.com/photo-1603584173870-7f3ca91484a7?q=80&w=2069">
-                <div class="media-overlay">
-                    <span class="media-label">WORKSHOP</span>
-                    <h3 style="font-weight:900">NAVY BEAST</h3>
-                </div>
-            </div>
-            <div class="media-item">
-                <img src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1000">
-                <div class="media-overlay">
-                    <span class="media-label">PIT STOP</span>
-                    <h3 style="font-weight:900">RACE DAY</h3>
-                </div>
-            </div>
+        <p style="color:var(--cyan); font-size:10px; font-weight:900; letter-spacing: 3px;">// THE MACHINES</p>
+        <h2 style="margin-bottom:40px; font-size: clamp(30px, 5vw, 40px); text-transform:uppercase; font-weight: 900;">SNR Workshop</h2>
+        <div class="garage-grid" id="garage-target">
+            <!-- Data from Supabase -->
         </div>
     </section>
 
     <footer>
-        <h2 style="font-size: clamp(25px, 5vw, 50px); font-weight: 900; margin-bottom: 30px; text-transform: uppercase;">Join The Revolution</h2>
-        <a href="#" class="discord-btn">Discord Server</a>
-        <p style="margin-top: 50px; color: #444; font-size: 10px; letter-spacing: 2px;">SNR RACING © 2024</p>
+        <h2 style="margin-bottom: 30px; font-weight: 900; text-transform: uppercase;">Ready to race?</h2>
+        <a href="#" class="discord-btn">JOIN OUR DISCORD</a>
+        <p style="margin-top: 40px; opacity: 0.3; font-size: 10px; letter-spacing: 2px;">SNR RACING © 2024 - ALL RIGHTS RESERVED</p>
     </footer>
 
-    <!-- Load Supabase SDK -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<script>
-    // 1. CONFIG SUPABASE (Ganti dengan API Key milikmu)
-    const SUPABASE_URL = 'https://URL_PROJECT_ANDA.supabase.co';
-    const SUPABASE_KEY = 'YOUR_ANON_PUBLIC_KEY';
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    // --- FUNGSI AMBIL DATA NEWS ---
-    async function fetchNews() {
-        const { data: news, error } = await supabase
-            .from('news')
-            .select('*')
-            .order('id', { ascending: false });
-
-        if (error) return console.error(error);
-
-        const wrapper = document.getElementById('news-wrapper');
-        const dotsContainer = document.getElementById('dots');
-        wrapper.innerHTML = '';
-        dotsContainer.innerHTML = '';
-
-        news.forEach((item, index) => {
-            // Render Card
-            wrapper.innerHTML += `
-                <div class="news-card">
-                    <img src="${item.image_url}" alt="${item.title}">
-                    <div class="news-content-box">
-                        <span class="news-date">${item.date_label}</span>
-                        <h3 class="news-title">${item.title}</h3>
-                        <a href="${item.link}" class="readme-btn">Read More</a>
-                    </div>
-                </div>
-            `;
-            // Render Dots
-            dotsContainer.innerHTML += `<div class="dot ${index === 0 ? 'active' : ''}"></div>`;
-        });
+    <script>
+        // --- 1. KURSOR LOGIC (FIXED) ---
+        const cursor = document.getElementById('cursor');
+        const follower = document.getElementById('cursor-follower');
         
-        startSlider(); // Jalankan slider setelah data muncul
-    }
-
-    // --- FUNGSI AMBIL DATA TICKER ---
-    async function fetchTicker() {
-        const { data: stats, error } = await supabase.from('ticker_stats').select('content');
-        if (error) return;
-
-        const tickerWrap = document.querySelector('.ticker-wrap');
-        // Gabungkan semua stat menjadi string panjang
-        const contentString = stats.map(s => `<div class="ticker-item">${s.content}</div>`).join('');
-        // Gandakan konten agar loop halus (seamless)
-        tickerWrap.innerHTML = contentString + contentString;
-    }
-
-    // --- FUNGSI AMBIL DATA DRIVER ---
-    async function fetchDrivers() {
-        const { data: drivers, error } = await supabase.from('drivers').select('*').order('id', { ascending: true });
-        if (error) return;
-
-        const container = document.querySelector('.card-hand-container');
-        container.innerHTML = '';
-
-        drivers.forEach((d, index) => {
-            container.innerHTML += `
-                <div class="driver-card card-${index + 1}">
-                    <div class="card-header">
-                        <h4 style="font-size: 9px; letter-spacing: 2px; color: var(--cyan);">SNR PASS</h4>
-                        <span style="font-weight: 900; font-size: 24px; opacity: 0.2;">#${d.number}</span>
-                    </div>
-                    <img src="${d.image_url}" class="driver-portrait">
-                    <div class="card-footer">
-                        <p>${d.role}</p>
-                        <h3 style="font-size: 24px; font-weight: 900;">${d.name}</h3>
-                    </div>
-                </div>
-            `;
+        document.addEventListener('mousemove', (e) => {
+            // Posisi instan untuk titik tengah
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+            
+            // Posisi follower (sedikit lambat)
+            follower.style.left = e.clientX + 'px';
+            follower.style.top = e.clientY + 'px';
         });
-    }
 
-    // --- LOGIC SLIDER (Dijalankan setelah fetch) ---
-    function startSlider() {
-        const wrapper = document.getElementById('news-wrapper');
-        const dots = document.querySelectorAll('.dot');
-        let currentSlide = 0;
+        // Hover effect untuk elemen interaktif
+        const handleHover = () => {
+            const targets = document.querySelectorAll('a, .dot, .driver-card, .car-card');
+            targets.forEach(t => {
+                t.addEventListener('mouseenter', () => {
+                    follower.style.width = '60px';
+                    follower.style.height = '60px';
+                    follower.style.background = 'rgba(0, 204, 255, 0.1)';
+                });
+                t.addEventListener('mouseleave', () => {
+                    follower.style.width = '30px';
+                    follower.style.height = '30px';
+                    follower.style.background = 'transparent';
+                });
+            });
+        };
 
-        function updateSlider() {
-            wrapper.style.transform = `translateX(-${currentSlide * 100}%)`;
-            dots.forEach((dot, index) => dot.classList.toggle('active', index === currentSlide));
+        // --- 2. SUPABASE CONFIG ---
+        const SB_URL = 'https://YOUR_SUPABASE_URL.supabase.co'; 
+        const SB_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        const supabase = supabase.createClient(SB_URL, SB_KEY);
+
+        // --- 3. DATA LOADERS ---
+        async function loadAllData() {
+            try {
+                // Load News
+                const { data: news } = await supabase.from('news').select('*').order('id', { ascending: false });
+                if(news) {
+                    const target = document.getElementById('news-target');
+                    const dots = document.getElementById('dots-target');
+                    target.innerHTML = news.map(n => `
+                        <div class="news-card">
+                            <img src="${n.image_url}">
+                            <div class="news-content-box">
+                                <span style="color:var(--cyan); font-size:10px; font-weight:900;">${n.date_label}</span>
+                                <h3 style="font-size:clamp(20px, 4vw, 30px); margin:10px 0; font-weight:900; text-transform:uppercase;">${n.title}</h3>
+                                <a href="${n.link}" class="readme-btn" style="color:var(--cyan); text-decoration:none; border:1px solid var(--cyan); padding:8px 20px; font-size:10px; font-weight:900; display:inline-block;">READ MORE</a>
+                            </div>
+                        </div>
+                    `).join('');
+                    dots.innerHTML = news.map((_, i) => `<div class="dot ${i===0?'active':''}"></div>`).join('');
+                    initSlider(news.length);
+                }
+
+                // Load Ticker
+                const { data: ticker } = await supabase.from('ticker_stats').select('content');
+                if(ticker) {
+                    const content = ticker.map(t => `<div class="ticker-item">${t.content}</div>`).join('');
+                    document.getElementById('ticker-target').innerHTML = content + content;
+                }
+
+                // Load Drivers
+                const { data: drivers } = await supabase.from('drivers').select('*');
+                if(drivers) {
+                    document.getElementById('drivers-target').innerHTML = drivers.map(d => `
+                        <div class="driver-card">
+                            <div style="display:flex; justify-content:space-between; opacity:0.3; font-size:10px; font-weight:900;">
+                                <span>SNR PASS</span>
+                                <span>#${d.number}</span>
+                            </div>
+                            <img src="${d.image_url}" class="driver-portrait">
+                            <p style="color:var(--cyan); font-size:10px; font-weight:900; letter-spacing:2px; margin-top:10px;">${d.role}</p>
+                            <h3 style="font-size:22px; font-weight:900; text-transform:uppercase;">${d.name}</h3>
+                        </div>
+                    `).join('');
+                }
+
+                // Load Garage
+                const { data: garage } = await supabase.from('garage').select('*');
+                if(garage) {
+                    document.getElementById('garage-target').innerHTML = garage.map(c => `
+                        <div class="car-card">
+                            <h4 style="color:var(--cyan); font-size:22px; font-weight:900; text-transform:uppercase;">${c.car_name}</h4>
+                            <p style="font-size:13px; opacity:0.6; margin: 10px 0 20px 0;">${c.description}</p>
+                            <div class="spec-item"><span>TOP SPEED</span><b>${c.top_speed}</b></div>
+                            <div class="spec-item"><span>ENGINE</span><b>${c.engine}</b></div>
+                        </div>
+                    `).join('');
+                }
+
+                // Re-init hover for new elements
+                handleHover();
+
+            } catch (e) {
+                console.error("Error loading data:", e);
+            }
         }
 
-        setInterval(() => {
-            if(dots.length > 0) {
-                currentSlide = (currentSlide + 1) % dots.length;
-                updateSlider();
-            }
-        }, 5000);
-    }
+        // --- 4. SLIDER LOGIC ---
+        let currentSlide = 0;
+        function initSlider(count) {
+            if(count <= 1) return;
+            setInterval(() => {
+                currentSlide = (currentSlide + 1) % count;
+                const wrapper = document.getElementById('news-target');
+                const dots = document.querySelectorAll('.dot');
+                wrapper.style.transform = `translateX(-${currentSlide * 100}%)`;
+                dots.forEach((d, i) => d.classList.toggle('active', i === currentSlide));
+            }, 5000);
+        }
 
-    // --- CURSOR LOGIC ---
-    const cursor = document.getElementById('cursor');
-    const follower = document.getElementById('cursor-follower');
-    document.addEventListener('mousemove', (e) => {
-        cursor.style.left = e.clientX + 'px';
-        cursor.style.top = e.clientY + 'px';
-        setTimeout(() => {
-            follower.style.left = (e.clientX - 15) + 'px';
-            follower.style.top = (e.clientY - 15) + 'px';
-        }, 60);
-    });
-
-    // Jalankan semua fungsi saat halaman load
-    window.onload = () => {
-        fetchNews();
-        fetchTicker();
-        fetchDrivers();
-    };
-</script>
+        // START
+        window.onload = () => {
+            loadAllData();
+            handleHover();
+        };
+    </script>
 </body>
 </html>
